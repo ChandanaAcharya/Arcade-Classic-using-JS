@@ -1,0 +1,214 @@
+<html>
+<h1>Game application</h1>
+<canvas id="gameCanvas" width="800" height="500"></canvas>
+<script>
+    var canvas;
+    var canvasContext;
+    var ballX = 50;
+    var ballY = 50;
+    var ballSpeedY = 10;
+    var ballSpeedX = 4; //creating a variable to support speed changes.
+    var paddle1Y = 250;
+    var paddle2Y = 250;
+    const PADDLE_HEIGHT = 150;
+    const PADDLE_THICKNESS = 10;
+    var player1Score = 0;
+    var player2Score = 0;
+    const WINNING_SCORE = 3;
+    var showingWinScreen = false;
+
+    function calculateMousePos(evt) {
+        var rect = canvas.getBoundingClientRect();
+        var root = document.documentElement;
+        var mouseX = evt.clientX - rect.left - root.scrollLeft;
+        var mouseY = evt.clientY - rect.top - root.scrollTop;
+        return {
+            x: mouseX,
+            y: mouseY
+        };
+    }
+
+    function handleMouseClick(evt) {
+        if (showingWinScreen) {
+            player1Score = 0;
+            player2Score = 0;
+            showingWinScreen = false;
+        }
+    }
+
+    window.onload = function() {
+
+            canvas = document.getElementById("gameCanvas");
+            canvasContext = canvas.getContext('2d');
+
+            var framesPerSecond = 50;
+
+            setInterval(function() {
+                moveEverything();
+                drawEverything();
+            }, 1000 / framesPerSecond);
+
+            canvas.addEventListener('mousedown', handleMouseClick);
+
+
+            canvas.addEventListener('mousemove', function(evt) {
+                var mousePos = calculateMousePos(evt);
+                paddle1Y = mousePos.y - (PADDLE_HEIGHT / 2);
+
+                //paddle2Y = mousePos.y - (PADDLE_HEIGHT / 2);
+
+            });
+        } //setInterval is used for the movement, where drawEverything function is passed with time. It tells how speed shld the ball move 
+
+    function ballReset() {
+        if (player1Score >= WINNING_SCORE || player2Score >= WINNING_SCORE) {
+            player1Score = 0;
+            player2Score = 0;
+            showingWinScreen = true;
+        }
+        ballSpeedX = -ballSpeedX;
+        ballX = canvas.width / 2;
+        ballY = canvas.height / 2;
+
+
+    }
+
+    function computerMovement() {
+        var Paddle2YCenter = paddle2Y + (PADDLE_HEIGHT / 2);
+        if (Paddle2YCenter < ballY - 35) {
+            paddle2Y += 6;
+        } else if (Paddle2YCenter > ballY + 35) {
+            paddle2Y -= 6;
+        }
+    }
+
+    function moveEverything() {
+        if (showingWinScreen) {
+            return;
+        }
+        computerMovement();
+
+        ballX += ballSpeedX;
+        ballY += ballSpeedY;
+
+        if (ballX > canvas.width) {
+            if (ballY > paddle2Y && ballY < paddle2Y + PADDLE_HEIGHT) {
+                ballSpeedX = -ballSpeedX;
+                var deltaY = ballY - (paddle2Y + PADDLE_HEIGHT / 2);
+                ballSpeedY = deltaY * 0.35;
+            } else {
+                player2Score++; // must be BEFORE ballReset()
+                ballReset();
+
+            }
+        }
+        if (ballX < 0) {
+            if (ballY > paddle1Y && ballY < paddle1Y + PADDLE_HEIGHT) {
+                ballSpeedX = -ballSpeedX;
+
+                var deltaY = ballY - (paddle1Y + PADDLE_HEIGHT / 2);
+                ballSpeedY = deltaY * 0.35;
+            } else {
+                player1Score++; // must be BEFORE ballReset()
+                ballReset();
+
+            }
+        }
+
+        if (ballY > canvas.height) {
+            ballSpeedY = -ballSpeedY; // // ballSpeedX = -5; //to move the ball into negative side, but prob with this is, it goes and come back in different speeds, to avoid that use belw code
+        }
+        if (ballY < 0) {
+            ballSpeedY = -ballSpeedY;
+        }
+    }
+
+    function drawNet() {
+        for (var i = 0; i < canvas.height; i += 40) {
+            colorRect(canvas.width / 2 - 1, i, 2, 20, 'white');
+        }
+    }
+
+    // drawEverything();
+    // drawEverything();
+    // drawEverything(); //will be called 3 times, check it in console
+    // }
+
+    function drawEverything() {
+
+        //next line blanks out the screen with black
+        colorRect(0, 0, canvas.width, canvas.height, 'black');
+        drawNet();
+
+        if (showingWinScreen) {
+            canvasContext.fillStyle = "white";
+            if (player1Score >= WINNING_SCORE) {
+                canvasContext.fillText("Left Player Won", 350, 200);
+            } else if (player2Score >= WINNING_SCORE) {
+                canvasContext.fillText("Right Player Won", 350, 200);
+            }
+
+
+            canvasContext.fillText("Click to continue", 350, 500);
+            return;
+        }
+
+        //this is left player paddle
+        colorRect(0, paddle1Y, PADDLE_THICKNESS, PADDLE_HEIGHT, 'white');
+
+        //this is right (computer) player paddle
+        colorRect(canvas.width - PADDLE_THICKNESS, paddle2Y, PADDLE_THICKNESS, PADDLE_HEIGHT, 'white');
+
+        //next line draws the ball
+        colorCircle(ballX, ballY, 10, 'white');
+
+        canvasContext.fillText(player1Score, 100, 100);
+        canvasContext.fillText(player2Score, canvas.width - 100, 100);
+
+        function colorCircle(centerX, centerY, radius, drawColor) {
+            canvasContext.fillStyle = drawColor;
+            canvasContext.beginPath();
+            canvasContext.arc(centerX, centerY, radius, 0, Math.PI * 2, true);
+            canvasContext.fill();
+
+        }
+
+        //next line draws the ball
+        //the below line of code, gives the circle shape with the mentioned speed(old speed)
+
+        // canvasContext.fillStyle = 'red';
+        // canvasContext.beginPath();
+        // canvasContext.arc(ballX, 100, 10, 0, Math.PI * 2, true);
+        // canvasContext.fill();
+
+        //Math.PI changes the shape of the circle and true-clockwise, false-anticlockwise and 10-increase the size of the ball
+
+        //ballX = ballX + 5; //60,70,80 - will be the output, coz doEverything() is called thrice
+        //console.log(ballX);
+        // canvasContext = canvas.getContext('2d'); //2d refers the (x,y) co-ordinates
+        //canvasContext.fillStyle = 'black';
+        //canvasContext.fillRect(0, 0, canvas.width, canvas.height);
+        //Here 0,0 refers to (x-left,y-top) and canvas.width = 600, canvas.height = 800
+        //alter the things
+
+        //canvasContext.fillStyle = 'white';
+        //canvasContext.fillRect(0, 210, 10, 100);
+        //o is uded to set aside the color(white) of the box.
+
+        //canvasContext.fillStyle = 'red';
+        //canvasContext.fillRect(ballX, 200, 50, 25); //this ll be keep on moving, without marking its starting position
+        //canvasContext.fillRect(75, 200, ballX, 25); //to mark the movement from position and each second gets updated onto the console.
+
+        //canvasContext.fillRect(ballX, 100, 10, 10);
+        //canvasContext.fillRect(ballX, ballX, ballX, ballX); //to move it all the sides
+
+    }
+
+    function colorRect(leftX, topY, width, height, drawColor) {
+        canvasContext.fillStyle = drawColor;
+        canvasContext.fillRect(leftX, topY, width, height);
+    }
+</script>
+
+
+</html>
